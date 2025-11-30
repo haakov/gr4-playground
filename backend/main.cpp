@@ -25,7 +25,8 @@
 
 
 
-int main(int argc, char** argv) {
+int main() {
+
     std::println(stderr, "Setting up registry");
 
     // TODO: Remove when GR gets proper blocks library

@@ -16,19 +16,23 @@ set(GR_MAX_WASM_THREAD_COUNT
 
 
 # dependencies: needs to be after adding the emscripten option so they are applied to dependency targets as well
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/../../cmake")
-include(../../cmake/CMakeRC.cmake)
-include(cmake/Dependencies.cmake)
+#list(APPEND CMAKE_MODULE_PATH "./cmake/")
+include(cmake/CMakeRC.cmake)
+include(FetchContent)
+include(cmake/DependenciesSHAs.cmake)
+include(cmake/CompileGr4Release.cmake)
+
+FetchContent_Declare(
+  gnuradio4
+  GIT_REPOSITORY https://github.com/fair-acc/gnuradio4.git
+  GIT_TAG ${GIT_SHA_GNURADIO4}
+  SYSTEM EXCLUDE_FROM_ALL)
+
+FetchContent_MakeAvailable(gnuradio4)
+
+od_set_release_flags_on_gnuradio_targets("${gnuradio4_SOURCE_DIR}")
 
 add_compile_definitions(GR_MAX_WASM_THREAD_COUNT=${GR_MAX_WASM_THREAD_COUNT}) # propagate to C++
-
-if(NOT TARGET od_acquisition)
-  add_subdirectory(../acquisition acquisition)
-endif()
-if(NOT TARGET raii_wrapper)
-  add_subdirectory(../utils utils)
-endif()
-
 
 cmrc_add_resource_library(
   sample_dashboards
@@ -71,7 +75,6 @@ target_link_libraries(
 
   target_link_libraries(${target_name}lib PUBLIC sample_dashboards)
 
-target_compile_options(${target_name}lib PUBLIC "-Wfatal-errors")
 target_link_libraries(${target_name} PRIVATE ${target_name}lib)
 
 if(OPENDIGITIZER_ENABLE_TESTING)
