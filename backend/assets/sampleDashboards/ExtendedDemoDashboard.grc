@@ -1,0 +1,114 @@
+blocks:
+  - id: opendigitizer::Arithmetic<float32>
+    parameters:
+      name: sum sigs1
+  - id: opendigitizer::Arithmetic<float32>
+    parameters:
+      name: sum sigs2
+  - id: opendigitizer::Arithmetic<float32>
+    parameters:
+      name: sum sigs3
+  - id: gr::blocks::fft::FFT<float32, gr::DataSet<float32>, gr::algorithm::FFT>
+    parameters:
+      name: FFT
+  - id: opendigitizer::SineSource<float32>
+    parameters:
+      name: sine source 3
+      frequency: 0.1
+  - id: opendigitizer::SineSource<float32>
+    parameters:
+      name: sine source 4
+      frequency: 0.2
+  - id: opendigitizer::SineSource<float32>
+    parameters:
+      name: sine source 5
+      frequency: 0.3
+  - id: opendigitizer::SineSource<float32>
+    parameters:
+      name: sine source 6
+      frequency: 0.4
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: sink 1
+      color: 0xff0000
+  - id: opendigitizer::ImPlotSink<gr::DataSet<float32>>
+    parameters:
+      name: sink 2
+      color: 0x00ff00
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: sink 3
+      color: 0x0000ff
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: sink 4
+      color: 0xffff00
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: sink 5
+      color: 0x00ffff
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: sink 6
+      color: 0xff00ff
+connections:
+  - [sine source 3, 0, sum sigs1, 0]
+  - [sine source 4, 0, sum sigs1, 1]
+  - [sine source 5, 0, sum sigs2, 0]
+  - [sine source 6, 0, sum sigs2, 1]
+  - [sum sigs1, 0, sum sigs3, 0]
+  - [sum sigs2, 0, sum sigs3, 1]
+  - [sum sigs3, 0, FFT, 0]
+  - [FFT, 0, sink 2, 0]
+  - [sum sigs3, 0, sink 1, 0]
+  - [sine source 3, 0, sink 3, 0]
+  - [sine source 4, 0, sink 4, 0]
+  - [sine source 5, 0, sink 5, 0]
+  - [sine source 6, 0, sink 6, 0]
+dashboard:
+  layout: Free
+  sources:
+    - name: sink 3
+      block: sink 3
+      color: !!uint32 0xff0000
+    - name: sink 4
+      block: sink 4
+      color: !!uint32 0x00ff00
+    - name: sink 5
+      block: sink 5
+      color: !!uint32 0x0000ff
+    - name: sink 6
+      block: sink 6
+      color: !!uint32 0xffff00
+    - name: sink 1
+      block: sink 1
+      color: !!uint32 0x00ffff
+    - name: sink 2
+      block: sink 2
+      color: !!uint32 0xff00ff
+  plots:
+    - name: Plot 4
+      sources:
+        - sink 3
+      rect: [0, 0, 8, 4]
+    - name: Plot 5
+      sources:
+        - sink 1
+      rect: [8, 0, 8, 8]
+    - name: Plot 6
+      sources:
+        - sink 4
+      rect: [0, 4, 8, 4]
+    - name: Plot 7
+      sources:
+        - sink 2
+      rect: [8, 8, 8, 8]
+    - name: Plot 8
+      sources:
+        - sink 5
+      rect: [0, 8, 8, 4]
+    - name: Plot 9
+      sources:
+        - sink 6
+      rect: [0, 12, 8, 4]
+  flowgraphLayout: ""

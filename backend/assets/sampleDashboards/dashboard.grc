@@ -1,0 +1,76 @@
+blocks:
+  - id: opendigitizer::RemoteStreamSource<float32>
+    parameters:
+      name: GS04ME1E_SeptumVoltage
+      remote_uri: https://fel0054.acc.gsi.de:80/GnuRadio/Acquisition?channelNameFilter=GS04ME1E_septum_voltage
+      verbose_console: false
+  - id: opendigitizer::RemoteStreamSource<float32>
+    parameters:
+      name: GS04ME1E_ClearingVoltage
+      remote_uri: https://fel0054.acc.gsi.de:80/GnuRadio/Acquisition?channelNameFilter=GS04ME1E_clearing_voltage
+      verbose_console: false
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: PlotSinkGS04ME1E_Septum_voltage
+      dataset_index: 0
+      signal_name: "GS04ME1E:septum_voltage"
+      signal_quantity: voltage
+      signal_unit: V
+      required_size: 640000
+  - id: opendigitizer::ImPlotSink<float32>
+    parameters:
+      name: PlotSinkGS04ME1E_Clearing_voltage
+      dataset_index: 0
+      signal_name: "GS04ME1E:clearing_voltage"
+      signal_quantity: voltage
+      signal_unit: V
+      required_size: 640000
+connections:
+  - [GS04ME1E_SeptumVoltage, 0, PlotSinkGS04ME1E_Septum_voltage, 0]
+  - [GS04ME1E_ClearingVoltage, 0, PlotSinkGS04ME1E_Clearing_voltage, 0]
+
+dashboard:
+  layout: Free
+  sources:
+    - name: PlotSinkGS04ME1E_Septum_voltage
+      block: PlotSinkGS04ME1E_Septum_voltage
+    - name: PlotSinkGS04ME1E_Clearing_voltage
+      block: PlotSinkGS04ME1E_Clearing_voltage
+  plots:
+    - name: CombinedPlot
+      axes:
+        - axis: X
+          min: inf
+          max: inf
+          scale: Time
+        - axis: Y
+          min: inf
+          max: inf
+      sources:
+        - PlotSinkGS04ME1E_Septum_voltage
+        - PlotSinkGS04ME1E_Clearing_voltage
+      rect: [0, 0, 4, 1] # x, y, width, height
+    - name: PlotGS04ME1E_Septum
+      axes:
+        - axis: X
+          min: inf
+          max: inf
+          scale: Time
+        - axis: Y
+          min: inf
+          max: inf
+      sources:
+        - PlotSinkGS04ME1E_Septum_voltage
+      rect: [0, 1, 2, 1] # x, y, width, height
+    - name: PlotGS04ME1E_Clearing
+      axes:
+        - axis: X
+          min: inf
+          max: inf
+          scale: Time
+        - axis: Y
+          min: inf
+          max: inf
+      sources:
+        - PlotSinkGS04ME1E_Clearing_voltage
+      rect: [2, 1, 2, 1] # x, y, width, height
