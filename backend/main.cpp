@@ -23,14 +23,20 @@
 #include <gnuradio-4.0/basic/ConverterBlocks.hpp>
 #include <gnuradio-4.0/basic/SignalGenerator.hpp>
 
+#include "httplib.h"
+#include <iostream>
 
+void enableCORS(httplib::Response& res) {
+    res.set_header("Access-Control-Allow-Origin", "*");
+    res.set_header("Access-Control-Allow-Methods", "POST, GET, OPTIONS");
+    res.set_header("Access-Control-Allow-Headers", "Content-Type");
+}
 
 int main() {
-
-    std::println(stderr, "Setting up registry");
-
     // TODO: Remove when GR gets proper blocks library
     auto* registry = grGlobalBlockRegistry();
+    auto block_count = registry->keys().size();
+
     gr::blocklib::initGrBasicBlocks(*registry);
     gr::blocklib::initGrElectricalBlocks(*registry);
     gr::blocklib::initGrFileIoBlocks(*registry);
@@ -39,9 +45,31 @@ int main() {
     gr::blocklib::initGrHttpBlocks(*registry);
     gr::blocklib::initGrMathBlocks(*registry);
     gr::blocklib::initGrTestingBlocks(*registry);
-    std::println("Blocks in registry: {}", registry->keys().size());
 
-    std::println(stderr, "Registry done.");
+    std::println("Blocks in registry: {}", block_count);
+
+    httplib::Server svr;
+
+    // 1. Handle the Preflight (OPTIONS) request
+    // The browser asks: "Can I send a POST with JSON?"
+    svr.Options("/blocks/count", [](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+        res.status = 204; // No Content (Successful generic response)
+    });
+
+
+    svr.Post("/blocks/count", [&](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res); // MUST add CORS headers here too!
+
+        std::cout << "Received blocks" << std::endl;
+
+        // Your logic here
+        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
+    });
+
+    std::cout << "Server started at localhost:8080" << std::endl;
+    svr.listen("0.0.0.0", 8080);
+
 
     return 0;
 }

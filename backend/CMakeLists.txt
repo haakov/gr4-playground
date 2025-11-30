@@ -22,6 +22,7 @@ include(FetchContent)
 include(cmake/DependenciesSHAs.cmake)
 include(cmake/CompileGr4Release.cmake)
 
+
 FetchContent_Declare(
   gnuradio4
   GIT_REPOSITORY https://github.com/fair-acc/gnuradio4.git
@@ -52,12 +53,14 @@ cmrc_add_resource_library(
   endif()
 
 
+
 # All ui/ translation-units (except main.cpp) are built by ${target_name}lib static lib just so they can be shared by
 # the tests and not build N times
 add_library(
   ${target_name}lib STATIC main.hpp)
 
 target_sources(${target_name} PRIVATE main.cpp)
+target_compile_options(${target_name} PRIVATE -Wno-error=old-style-cast -Wno-error=useless-cast -Wno-error=unused-parameter)
 
 target_link_libraries(
   ${target_name}lib
