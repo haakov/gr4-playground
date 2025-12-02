@@ -10,12 +10,24 @@ cd gr4-playground
 docker run -it -v `pwd`:/code ghcr.io/mormj/gr4-oot-env-incubator:latest bash
 ```
 
-Run the next commands from within the container:
+Run the next commands from within the container to build the GR4 GUI backend:
 ```
-mkdir build
-cd build
+mkdir backend/build
+cd backend/build
 cmake ..
 make -j2
 ```
 
+If you get the following error: `c++: fatal error: Killed signal terminated program cc1plus`, you have probably run out of memory. Try increasing the RAM and swap size of your Docker container, and use `make -j1` instead.
 
+Note: The `make` step will likely take hours, especially with a low thread count. 
+
+## Running the backend
+
+From within the Docker, run the following command from the project root:
+
+```
+./backend/build/gr4-gui-backend
+```
+
+The backend will listen on port 8081.
