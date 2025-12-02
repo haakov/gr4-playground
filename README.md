@@ -18,9 +18,7 @@ cmake ..
 make -j2
 ```
 
-If you get the following error: `c++: fatal error: Killed signal terminated program cc1plus`, you have probably run out of memory. Try increasing the RAM and swap size of your Docker container, and use `make -j1` instead.
-
-Note: The `make` step will likely take hours, especially with a low thread count. 
+If you get the following error: `c++: fatal error: Killed signal terminated program cc1plus`, you have probably run out of memory. Try increasing the RAM and swap size of your Docker container, and reduce the thread count of your `make` command. `-j4` is too much for my 16 GB Mac Mini M4, but `-j2` works. Note: The `make` step will probably take at least 30 minutes, maybe more than an hour.
 
 ## Running the backend
 
