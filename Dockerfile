@@ -4,4 +4,6 @@ COPY ./backend/ /code/
 
 RUN mkdir build
 RUN cmake -S . -B build
-RUN cmake --build build -j2
+WORKDIR /code/build
+RUN make -j3 baseline
+RUN make -j3 all

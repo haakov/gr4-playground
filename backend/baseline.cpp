@@ -6,8 +6,6 @@
 #include <format>
 #include <string>
 
-#include <csignal>
-
 
 #include <gnuradio-4.0/BlockRegistry.hpp>
 #include <gnuradio-4.0/Scheduler.hpp>
@@ -34,20 +32,7 @@ void enableCORS(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Headers", "Content-Type");
 }
 
-void signal_handler(int signum) {
-    std::cout << "\n\n SIGINT received (" << signum << ").\n";
-    std::cout << "Performing graceful shutdown...\n";
-
-    // **Important: Add your cleanup code here.**
-    // e.g., Close open files, save application state, release resources.
-
-    std::cout << "Application gracefully closed.\n";
-    // Terminate the program.
-    exit(signum);
-}
-
 int main() {
-    signal(SIGINT, signal_handler);
     // TODO: Remove when GR gets proper blocks library
     auto* registry = grGlobalBlockRegistry();
     auto block_count = registry->keys().size();
