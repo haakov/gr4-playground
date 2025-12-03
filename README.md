@@ -25,7 +25,7 @@ If you get the following error: `c++: fatal error: Killed signal terminated prog
 From within the Docker, run the following command from the project root:
 
 ```
-./backend/build/gr4-gui-backend
+docker run -ti -p 8080:8080 gr4-playground "/code/build/backend"
 ```
 
 The backend will listen on port 8081.
