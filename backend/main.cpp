@@ -1,16 +1,11 @@
-
+#include <iostream>
 #include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <format>
 #include <string>
-
 #include <csignal>
-
-
-#include <gnuradio-4.0/BlockRegistry.hpp>
-#include <gnuradio-4.0/Scheduler.hpp>
 
 #include <GrBasicBlocks.hpp>
 #include <GrElectricalBlocks.hpp>
@@ -20,13 +15,13 @@
 #include <GrHttpBlocks.hpp>
 #include <GrMathBlocks.hpp>
 #include <GrTestingBlocks.hpp>
+
 #include <gnuradio-4.0/BlockRegistry.hpp>
 #include <gnuradio-4.0/Scheduler.hpp>
 #include <gnuradio-4.0/basic/ConverterBlocks.hpp>
 #include <gnuradio-4.0/basic/SignalGenerator.hpp>
 
 #include "httplib.h"
-#include <iostream>
 
 void enableCORS(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Origin", "*");
@@ -35,22 +30,16 @@ void enableCORS(httplib::Response& res) {
 }
 
 void signal_handler(int signum) {
-    std::cout << "\n\n SIGINT received (" << signum << ").\n";
-    std::cout << "Performing graceful shutdown...\n";
-
-    // **Important: Add your cleanup code here.**
-    // e.g., Close open files, save application state, release resources.
-
-    std::cout << "Application gracefully closed.\n";
-    // Terminate the program.
+    std::cout << "\n\n SIGINT received.\n";
     exit(signum);
 }
 
 int main() {
-    signal(SIGINT, signal_handler);
+    signal(SIGINT, signal_handler);  // Catch SIGINT
     // TODO: Remove when GR gets proper blocks library
     auto* registry = grGlobalBlockRegistry();
     auto block_count = registry->keys().size();
+    auto blocks = registry->keys();
 
     gr::blocklib::initGrBasicBlocks(*registry);
     gr::blocklib::initGrElectricalBlocks(*registry);
@@ -65,26 +54,28 @@ int main() {
 
     httplib::Server svr;
 
-    // 1. Handle the Preflight (OPTIONS) request
-    // The browser asks: "Can I send a POST with JSON?"
     svr.Options("/blocks/count", [](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
-        res.status = 204; // No Content (Successful generic response)
+        res.status = 204;
+    });
+    svr.Post("/blocks/count", [&](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+    	std::println("Block count");
+        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
     });
 
-
-    svr.Post("/blocks/count", [&](const httplib::Request& req, httplib::Response& res) {
-        enableCORS(res); // MUST add CORS headers here too!
-
-        std::cout << "Received blocks" << std::endl;
-
-        // Your logic here
-        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
+    svr.Options("/blocks", [](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+        res.status = 204;
+    });
+    svr.Post("/blocks", [&](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+    	std::println("Blocks");
+        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json"); # TODO FIXME
     });
 
     std::cout << "Server started at localhost:8080" << std::endl;
     svr.listen("0.0.0.0", 8080);
-
 
     return 0;
 }
