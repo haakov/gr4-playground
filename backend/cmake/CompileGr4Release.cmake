@@ -20,9 +20,58 @@ function(od_get_all_targets_impl dir)
   endforeach()
 endfunction()
 
+function(od_get_all_relevant_targets_impl dir)
+    set(whitelisted_targets
+gnuradio-options
+magic_enum
+exprtk
+pmtv
+vir
+ut
+style
+vir-simd
+vir-simd-test-stdlib
+vir-simd-test-fallback
+vir-simd-test-stdlib-cxx20
+vir-simd-test-fallback-cxx20
+check
+httplib
+ut-benchmark
+bm_example
+gnuradio-core
+gnuradio-blocklib-core
+gnuradio-plugin
+gnuradio-meta
+gnuradio-algorithm
+gr-basic
+GrBasicBlocksObject
+GrBasicBlocksShared
+GrBasicBlocksStatic)
+
+  get_property(
+    ts
+    DIRECTORY "${dir}"
+    PROPERTY BUILDSYSTEM_TARGETS)
+  if(ts)
+    foreach(t IN LISTS ts)
+        if(t IN_LIST whitelisted_targets)
+      set_property(GLOBAL APPEND PROPERTY OD_COLLECTED_TARGETS "${t}")
+  endif()
+    endforeach()
+  endif()
+
+  get_property(
+    subs
+    DIRECTORY "${dir}"
+    PROPERTY SUBDIRECTORIES)
+  foreach(s IN LISTS subs)
+    od_get_all_relevant_targets_impl("${s}")
+  endforeach()
+endfunction()
+
 function(od_get_all_targets dir out_var)
   set_property(GLOBAL PROPERTY OD_COLLECTED_TARGETS "")
-  od_get_all_targets_impl("${dir}")
+  od_get_all_relevant_targets_impl("${dir}")
   get_property(_res GLOBAL PROPERTY OD_COLLECTED_TARGETS)
   list(REMOVE_DUPLICATES _res)
   set(${out_var}

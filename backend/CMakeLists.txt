@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.17)
 
 # set a variable in CMake
-set(projectName "gr4-gui-backend")
+set(project_name "gr4-playground")
+set(target_name "main")
 
-project(${projectName} LANGUAGES CXX)
+project(${project_name} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -25,6 +26,8 @@ FetchContent_MakeAvailable(gnuradio4)
 
 od_set_release_flags_on_gnuradio_targets("${gnuradio4_SOURCE_DIR}")
 
+add_executable(${target_name})
+
 target_sources(${target_name} PRIVATE main.cpp)
 target_compile_options(${target_name} PRIVATE -Wno-error=old-style-cast -Wno-error=useless-cast -Wno-error=unused-parameter)
 
@@ -34,11 +37,5 @@ target_link_libraries(
          gnuradio-core
          gnuradio-blocklib-core
          GrBasicBlocksShared
-         GrElectricalBlocksShared
-         GrFileIoBlocksShared
-         GrFilterBlocksShared
-         GrFourierBlocksShared
-         GrHttpBlocksShared
-         GrMathBlocksShared
-         GrTestingBlocksShared)
+         )
 

@@ -7,17 +7,11 @@
 #include <string>
 #include <csignal>
 
-#include <GrBasicBlocks.hpp>
-#include <GrElectricalBlocks.hpp>
-#include <GrFileIoBlocks.hpp>
-#include <GrFilterBlocks.hpp>
-#include <GrFourierBlocks.hpp>
-#include <GrHttpBlocks.hpp>
-#include <GrMathBlocks.hpp>
-#include <GrTestingBlocks.hpp>
-
 #include <gnuradio-4.0/BlockRegistry.hpp>
 #include <gnuradio-4.0/Scheduler.hpp>
+
+#include <GrBasicBlocks.hpp>
+
 #include <gnuradio-4.0/basic/ConverterBlocks.hpp>
 #include <gnuradio-4.0/basic/SignalGenerator.hpp>
 
@@ -42,13 +36,6 @@ int main() {
     auto blocks = registry->keys();
 
     gr::blocklib::initGrBasicBlocks(*registry);
-    gr::blocklib::initGrElectricalBlocks(*registry);
-    gr::blocklib::initGrFileIoBlocks(*registry);
-    gr::blocklib::initGrFilterBlocks(*registry);
-    gr::blocklib::initGrFourierBlocks(*registry);
-    gr::blocklib::initGrHttpBlocks(*registry);
-    gr::blocklib::initGrMathBlocks(*registry);
-    gr::blocklib::initGrTestingBlocks(*registry);
 
     std::println("Blocks in registry: {}", block_count);
 
@@ -71,7 +58,7 @@ int main() {
     svr.Post("/blocks", [&](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
     	std::println("Blocks");
-        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json"); # TODO FIXME
+        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json"); // TODO FIXME
     });
 
     std::cout << "Server started at localhost:8080" << std::endl;
