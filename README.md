@@ -25,7 +25,11 @@ If you get the following error: `c++: fatal error: Killed signal terminated prog
 From within the Docker, run the following command from the project root:
 
 ```
-docker run -ti -p 8080:8080 gr4-playground "/code/build/backend"
+docker run -ti -p 8080:8080 gr4-playground "/code/build/main"
 ```
 
-The backend will listen on port 8081.
+## Running the frontend
+
+From the frontend directory, run python3 -m http.server
+
+The backend will listen on port 8080.
