@@ -1,25 +1,10 @@
 # gr4-playground
 
-## Setup and build
+A starting point for communicating with GNU Radio 4. Look at frontend/script.js for examples (currently only the /blocks and /block_count endpoints are implemented)
 
-Using mormj's `gr4-oot-env-incubator`. This defaults to the /code directory
-
-```
-git clone https://github.com/haakov/gr4-playground
-cd gr4-playground
-docker build -t gr4-playground .
-```
-
-## Running the backend
-
-From within the Docker, run the following command from the project root:
+How to run: 
 
 ```
-docker run -ti -p 8080:8080 gr4-playground "/code/build/main"
+docker run -it -p 8080:8080 ghcr.io/haakov/gr4-playground:latest /code/build/main
 ```
 
-## Running the frontend
-
-From the frontend directory, run `python3 -m http.server`
-
-The backend will listen on port 8080.
