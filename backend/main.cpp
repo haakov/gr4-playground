@@ -16,6 +16,9 @@
 #include <gnuradio-4.0/basic/SignalGenerator.hpp>
 
 #include "httplib.h"
+#include "json.hpp"
+
+using json = nlohmann::json;
 
 void enableCORS(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Origin", "*");
@@ -33,7 +36,14 @@ int main() {
     // TODO: Remove when GR gets proper blocks library
     auto* registry = grGlobalBlockRegistry();
     auto block_count = registry->keys().size();
-    auto blocks = registry->keys();
+    std::vector<std::string> blocks;
+    for (auto key : registry->keys()) {
+        std::string tmp = key;
+        blocks.push_back(tmp);
+    }
+
+    json j;
+    j["blocks"] = blocks;
 
     gr::blocklib::initGrBasicBlocks(*registry);
 
@@ -41,11 +51,11 @@ int main() {
 
     httplib::Server svr;
 
-    svr.Options("/blocks/count", [](const httplib::Request& req, httplib::Response& res) {
+    svr.Options("/block_count", [](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
         res.status = 204;
     });
-    svr.Post("/blocks/count", [&](const httplib::Request& req, httplib::Response& res) {
+    svr.Post("/block_count", [&](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
     	std::println("Block count");
         res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
@@ -58,7 +68,7 @@ int main() {
     svr.Post("/blocks", [&](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
     	std::println("Blocks");
-        res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json"); // TODO FIXME
+        res.set_content(j.dump(), "application/json");
     });
 
     std::cout << "Server started at localhost:8080" << std::endl;
