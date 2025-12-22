@@ -24,17 +24,21 @@ async function blocks() {
     console.log("Result from C++:", data.blocks);
 }
 
-async function blockInfo() {
+async function blockInfo(block_name) {  // Example: blockInfo("gr::basic::SignalGenerator<float32>")
     const response = await fetch('http://localhost:8080/block_info', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({"block": "gr::basic::FunctionGenerator<float32>"})
+        body: JSON.stringify({"block": block_name})
     });
 
     const data = await response.json();
-    console.log("Block parameters:", data.parameters);
-    console.log("Block input ports:", data.inputs);
-    console.log("Block output ports:", data.outputs);
+    if ("error" in data) {
+        console.error("Error:", data.error)
+    } else {
+        console.log("Block parameters:", data.parameters);
+        console.log("Block input ports:", data.inputs);
+        console.log("Block output ports:", data.outputs);
+    }
 }

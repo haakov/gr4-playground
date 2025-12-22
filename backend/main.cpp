@@ -32,32 +32,21 @@ void signal_handler(int signum) {
 }
 
 int main() {
+    httplib::Server svr;
+
     signal(SIGINT, signal_handler);  // Catch SIGINT
     // TODO: Remove when GR gets proper blocks library
     auto* registry = grGlobalBlockRegistry();
-    auto block_count = registry->keys().size();
-    std::vector<std::string> blocks;
-    for (auto key : registry->keys()) {
-        std::string tmp = key;
-        blocks.push_back(tmp);
-    }
-
-    json j;
-    j["blocks"] = blocks;
-
     gr::blocklib::initGrBasicBlocks(*registry);
-
-    std::println("Blocks in registry: {}", block_count);
-
-    httplib::Server svr;
 
     svr.Options("/block_count", [](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
         res.status = 204;
     });
-    svr.Post("/block_count", [&](const httplib::Request& req, httplib::Response& res) {
+    svr.Post("/block_count", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
     	std::println("Block count");
+        auto block_count = registry->keys().size();
         res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
     });
 
@@ -65,9 +54,18 @@ int main() {
         enableCORS(res);
         res.status = 204;
     });
-    svr.Post("/blocks", [&](const httplib::Request& req, httplib::Response& res) {
+    svr.Post("/blocks", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
+        std::vector<std::string> blocks;
+        json j;
+
+        for (auto key : registry->keys()) {
+            std::string tmp = key;
+            blocks.push_back(tmp);
+        }
+        j["blocks"] = blocks;
     	std::println("Blocks");
+
         res.set_content(j.dump(), "application/json");
     });
 
@@ -77,46 +75,58 @@ int main() {
     });
     svr.Post("/block_info", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
-        json data = json::parse(req.body);
+        json j;
+        std::vector<std::tuple<std::string,std::string>> parameters;
+        std::vector<std::tuple<std::string,std::string>> inputs, outputs;
 
-        json p_;
+        json data = json::parse(req.body);
         std::string block = data["block"];
         std::println("Block info {}", block);
 
         if (!registry->contains(block)) {
-            p_["error"] = "No such block";
-            p_["parameters"] = {};
-            p_["inputs"] = {};
-            p_["outputs"] = {};
-            res.set_content(p_.dump(), "application/json");
+            j["error"] = "No such block";
+            j["parameters"] = {};
+            j["inputs"] = {};
+            j["outputs"] = {};
+            res.set_content(j.dump(), "application/json");
             std::println("No such block in registry");
             return;
         }
 
         // Block exists
-
         gr::property_map map_;
         auto block_mod = registry->create(block, map_);
         block_mod->settings().init();
-        std::vector<std::string> parameters;
-        std::vector<std::tuple<std::string,std::string>> inputs, outputs;
+
         for (const auto& [key, value] : block_mod->settings().defaultParameters()) {
-            parameters.push_back(key);
+            std::string val_s = std::visit(gr::meta::overloaded{
+                          [&](double val) { return std::to_string(val); },
+                          [&](float val) { return std::to_string(val); },
+                          [&](auto&& val) {
+                              using T = std::remove_cvref_t<decltype(val)>;
+                              if constexpr (std::integral<T>) {
+                                  std::string x = std::format("{}", val);
+                                  return std::to_string(val);
+                              } else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
+                                  return std::string(val);
+                              }
+                              return ""s;
+                          }},
+                        value);
+            parameters.push_back(std::tuple<std::string,std::string>(key, val_s));
         }
-        auto out = block_mod->outputMetaInfos();
-        auto in = block_mod->inputMetaInfos();
-        for (const auto& item : in) {
+        for (const auto& item : block_mod->inputMetaInfos()) {
             inputs.push_back(std::tuple<std::string,std::string>(item.signal_name.value, item.data_type.value));
         }
-        for (const auto& item : out) {
+        for (const auto& item : block_mod->outputMetaInfos()) {
             outputs.push_back(std::tuple<std::string,std::string>(item.signal_name.value, item.data_type.value));
         }
 
-        p_["parameters"] = parameters;
-        p_["inputs"] = inputs;
-        p_["outputs"] = outputs;
+        j["parameters"] = parameters;
+        j["inputs"] = inputs;
+        j["outputs"] = outputs;
 
-        res.set_content(p_.dump(), "application/json");
+        res.set_content(j.dump(), "application/json");
     });
 
     std::cout << "Server started at localhost:8080" << std::endl;
