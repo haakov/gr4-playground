@@ -56,14 +56,23 @@ int main() {
     });
     svr.Post("/blocks", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
-        std::vector<std::string> blocks;
+        std::vector<std::map<std::string,std::string>> blocks;
         json j;
 
         for (auto key : registry->keys()) {
-            std::string tmp = key;
-            blocks.push_back(tmp);
+            auto block = std::map<std::string,std::string>();
+	    block["id"] = key;
+	    block["label"] = key;
+	    block["category"] = "Basic";
+	    block["inputs"] = "Basic";
+	    blocks.push_back(block);
         }
         j["blocks"] = blocks;
+        j["blocksByCategory"] = std::map<std::string,std::vector<std::string>>();
+        j["blocksByCategory"]["Basic"] = blocks;
+        j["categories"] = std::vector<std::string>({"Basic"});
+        j["total_blocks"] = blocks.size();
+        j["generated_at"] = std::string("10:00 01.01.2026");
     	std::println("Blocks");
 
         res.set_content(j.dump(), "application/json");
