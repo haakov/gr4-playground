@@ -61,11 +61,11 @@ int main() {
 
         for (auto key : registry->keys()) {
             auto block = std::map<std::string,std::string>();
-	    block["id"] = key;
-	    block["label"] = key;
-	    block["category"] = "Basic";
-	    block["inputs"] = "Basic";
-	    blocks.push_back(block);
+            block["id"] = key;
+            block["label"] = key;
+            block["category"] = "Basic";
+            block["inputs"] = "Basic";
+            blocks.push_back(block);
         }
         j["blocks"] = blocks;
         j["blocksByCategory"] = std::map<std::string,std::vector<std::string>>();
