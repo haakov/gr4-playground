@@ -56,22 +56,73 @@ int main() {
     });
     svr.Post("/blocks", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
-        std::vector<std::map<std::string,std::string>> blocks;
         json j;
+        j["blocks"] = json::array();
 
         for (auto key : registry->keys()) {
-            auto block = std::map<std::string,std::string>();
-            block["id"] = key;
-            block["label"] = key;
-            block["category"] = "Basic";
-            block["inputs"] = "Basic";
-            blocks.push_back(block);
+            gr::property_map map_;
+            auto block_mod = registry->create(key, map_);
+            block_mod->settings().init();
+            json block = {
+                    {"key", key},
+                    {"label", key},
+                    {"id", key},
+                    {"category", "Basic"},
+                    {"parameters", json::array()},
+                    {"flags", json::array()},
+                    {"inputs", json::array()},
+                    {"outputs", json::array()}
+            };
+
+            for (const auto& item : block_mod->inputMetaInfos()) {
+                block["inputs"].push_back({
+                    {"key", item.signal_name.value},
+                    {"id", item.signal_name.value},
+                    {"optional", false},
+                    {"type", item.data_type.value}
+                });
+            }
+
+            for (const auto& item : block_mod->outputMetaInfos()) {
+                block["outputs"].push_back({
+                    {"key", item.signal_name.value},
+                    {"id", item.signal_name.value},
+                    {"optional", false},
+                    {"type", item.data_type.value}
+                });
+            }
+
+            for (const auto& [key_, value] : block_mod->settings().defaultParameters()) {
+                std::string val_s = std::visit(gr::meta::overloaded{
+                    [&](double val) { return std::to_string(val); },
+                    [&](float val) { return std::to_string(val); },
+                    [&](auto&& val) {
+                        using T = std::remove_cvref_t<decltype(val)>;
+                        if constexpr (std::integral<T>) {
+                            std::string x = std::format("{}", val);
+                            return std::to_string(val);
+                        } else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
+                            return std::string(val);
+                        }
+                        return ""s;
+                    }},
+                    value
+                );
+                block["parameters"].push_back({
+                    {"key", key_},
+                    {"value", val_s},
+                    {"default", val_s},
+                    {"hide", false},
+                    {"id", key_},
+                    {"label", key_}
+                });
+            }
+
+            j["blocks"].push_back(block);
         }
-        j["blocks"] = blocks;
-        j["blocksByCategory"] = std::map<std::string,std::vector<std::string>>();
-        j["blocksByCategory"]["Basic"] = blocks;
+        j["blocksByCategory"]["Basic"] = j["blocks"];
         j["categories"] = std::vector<std::string>({"Basic"});
-        j["total_blocks"] = blocks.size();
+        j["total_blocks"] = 458;
         j["generated_at"] = std::string("10:00 01.01.2026");
     	std::println("Blocks");
 
