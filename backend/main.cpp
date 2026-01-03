@@ -65,7 +65,7 @@ int main() {
             block_mod->settings().init();
             json block = {
                     {"key", key},
-                    {"label", key},
+                    {"label", key.substr(0, key.find("<"))},
                     {"id", key},
                     {"category", "Basic"},
                     {"parameters", json::array()},
@@ -108,11 +108,19 @@ int main() {
                     }},
                     value
                 );
+                bool visible = std::visit(gr::meta::overloaded{
+                    [&](bool val) { return bool(val); },
+                    [&](auto&& val) {
+                        return true;
+                    }},
+                    block_mod->metaInformation()[std::format("{}::visible", key_)]
+                );
                 block["parameters"].push_back({
                     {"key", key_},
+                    {"visible", visible},
                     {"value", val_s},
                     {"default", val_s},
-                    {"hide", false},
+                    {"hide", !visible},
                     {"id", key_},
                     {"label", key_}
                 });
