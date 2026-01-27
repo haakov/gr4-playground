@@ -46,7 +46,16 @@ gnuradio-algorithm
 gr-basic
 GrBasicBlocksObject
 GrBasicBlocksShared
-GrBasicBlocksStatic)
+GrBasicBlocksStatic
+gr-testing
+GrTestingBlocksObject
+GrTestingBlocksShared
+gr-filter
+GrFilterBlocksObject
+GrFilterBlocksShared
+gr-fileio
+GrFileIoBlocksObject
+GrFileIoBlocksShared)
 
   get_property(
     ts
@@ -96,7 +105,8 @@ function(od_set_release_flags_on_gnuradio_targets dir)
                   -g0
                   -DNDEBUG
                   -ffunction-sections
-                  -fdata-sections)
+                  -fdata-sections
+                  -fwasm-exceptions)
       endif()
     endif()
   endforeach()
