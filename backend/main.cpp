@@ -1,16 +1,17 @@
-#include <iostream>
 #include <algorithm>
 #include <array>
+#include <csignal>
 #include <cstdio>
 #include <cstdlib>
 #include <format>
+#include <iostream>
 #include <string>
-#include <csignal>
 
 #include <gnuradio-4.0/BlockRegistry.hpp>
 #include <gnuradio-4.0/Scheduler.hpp>
 
 #include <GrBasicBlocks.hpp>
+#include <GrTestingBlocks.hpp>
 
 #include <gnuradio-4.0/basic/ConverterBlocks.hpp>
 #include <gnuradio-4.0/basic/SignalGenerator.hpp>
@@ -34,10 +35,10 @@ void signal_handler(int signum) {
 int main() {
     httplib::Server svr;
 
-    signal(SIGINT, signal_handler);  // Catch SIGINT
-    // TODO: Remove when GR gets proper blocks library
+    signal(SIGINT, signal_handler); // Catch SIGINT
     auto* registry = grGlobalBlockRegistry();
     gr::blocklib::initGrBasicBlocks(*registry);
+    gr::blocklib::initGrTestingBlocks(*registry);
 
     svr.Options("/block_count", [](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
@@ -45,7 +46,7 @@ int main() {
     });
     svr.Post("/block_count", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
-    	std::println("Block count");
+        std::println("Block count");
         auto block_count = registry->keys().size();
         res.set_content(std::format("{{\"result\": {}}}", block_count), "application/json");
     });
@@ -57,145 +58,76 @@ int main() {
     svr.Post("/blocks", [&registry](const httplib::Request& req, httplib::Response& res) {
         enableCORS(res);
         json j;
-        j["blocks"] = json::array();
+        j["blocks"]     = json::array();
+        j["categories"] = json::array();
 
         for (auto key : registry->keys()) {
             gr::property_map map_;
-            auto block_mod = registry->create(key, map_);
+            auto             block_mod = registry->create(key, map_);
             block_mod->settings().init();
-            json block = {
-                    {"key", key},
-                    {"label", key.substr(0, key.find("<"))},
-                    {"id", key},
-                    {"category", "Basic"},
-                    {"parameters", json::array()},
-                    {"flags", json::array()},
-                    {"inputs", json::array()},
-                    {"outputs", json::array()}
-            };
+            json block = {{"key", key}, {"label", key.substr(0, key.find("<"))}, {"id", key}, {"category", ""}, {"parameters", json::array()}, {"flags", json::array()}, {"inputs", json::array()}, {"outputs", json::array()}};
 
             for (const auto& item : block_mod->inputMetaInfos()) {
-                block["inputs"].push_back({
-                    {"key", item.signal_name.value},
-                    {"id", item.signal_name.value},
-                    {"optional", false},
-                    {"type", item.data_type.value}
-                });
+                block["inputs"].push_back({{"key", item.signal_name.value}, {"id", item.signal_name.value}, {"optional", false}, {"type", item.data_type.value}});
             }
 
             for (const auto& item : block_mod->outputMetaInfos()) {
-                block["outputs"].push_back({
-                    {"key", item.signal_name.value},
-                    {"id", item.signal_name.value},
-                    {"optional", false},
-                    {"type", item.data_type.value}
-                });
+                block["outputs"].push_back({{"key", item.signal_name.value}, {"id", item.signal_name.value}, {"optional", false}, {"type", item.data_type.value}});
             }
 
             for (const auto& [key_, value] : block_mod->settings().defaultParameters()) {
-                std::string val_s = std::visit(gr::meta::overloaded{
-                    [&](double val) { return std::to_string(val); },
-                    [&](float val) { return std::to_string(val); },
-                    [&](auto&& val) {
-                        using T = std::remove_cvref_t<decltype(val)>;
-                        if constexpr (std::integral<T>) {
-                            std::string x = std::format("{}", val);
-                            return std::to_string(val);
-                        } else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
-                            return std::string(val);
-                        }
-                        return ""s;
-                    }},
-                    value
-                );
-                bool visible = std::visit(gr::meta::overloaded{
-                    [&](bool val) { return bool(val); },
-                    [&](auto&& val) {
-                        return true;
-                    }},
-                    block_mod->metaInformation()[std::format("{}::visible", key_)]
-                );
-                block["parameters"].push_back({
-                    {"key", key_},
-                    {"visible", visible},
-                    {"value", val_s},
-                    {"default", val_s},
-                    {"hide", !visible},
-                    {"id", key_},
-                    {"label", key_}
-                });
+                std::string val_s = value.value_or(std::string());
+
+                auto&            meta = block_mod->metaInformation();
+                std::pmr::string full_key{std::format("{}::visible", key_)};
+
+                bool visible = false;
+
+                if (meta.contains(full_key)) {
+                    visible = meta.at(full_key).get_if<bool>();
+                }
+                block["parameters"].push_back({{"key", key_}, {"visible", visible}, {"value", val_s}, {"default", val_s}, {"hide", !visible}, {"id", key_}, {"label", key_}});
+
+                if (key_ == "name") {
+                    if (val_s.starts_with("gr::basic")) {
+                        block["category"] = "basic";
+                    } else if (val_s.starts_with("gr::testing")) {
+                        block["category"] = "testing";
+                    } else if (val_s.starts_with("gr::blocks")) {
+                        block["category"] = "blocks";
+                    } else {
+                        block["category"] = "other";
+                    }
+                }
             }
 
+            auto category = block["category"];
             j["blocks"].push_back(block);
+            if (!std::ranges::contains(j["categories"], category)) {
+                j["blocksByCategory"][category] = json::array();
+                j["categories"].push_back(category);
+            }
+            j["blocksByCategory"][category].push_back(block);
         }
-        j["blocksByCategory"]["Basic"] = j["blocks"];
-        j["categories"] = std::vector<std::string>({"Basic"});
-        j["total_blocks"] = 458;
+        j["total_blocks"] = j["blocks"].size();
         j["generated_at"] = std::string("10:00 01.01.2026");
-    	std::println("Blocks");
+        std::println("Blocks");
 
         res.set_content(j.dump(), "application/json");
     });
+    /*
+        svr.Options("/run", [](const httplib::Request& req, httplib::Response& res) {
+            enableCORS(res);
+            res.status = 204;
+        });
+        svr.Post("/run", [&registry](const httplib::Request& req, httplib::Response& res) {
+            enableCORS(res);
 
-    svr.Options("/block_info", [](const httplib::Request& req, httplib::Response& res) {
-        enableCORS(res);
-        res.status = 204;
-    });
-    svr.Post("/block_info", [&registry](const httplib::Request& req, httplib::Response& res) {
-        enableCORS(res);
-        json j;
-        std::vector<std::tuple<std::string,std::string>> parameters;
-        std::vector<std::tuple<std::string,std::string>> inputs, outputs;
 
-        json data = json::parse(req.body);
-        std::string block = data["block"];
-        std::println("Block info {}", block);
 
-        if (!registry->contains(block)) {
-            j["error"] = "No such block";
-            j["parameters"] = {};
-            j["inputs"] = {};
-            j["outputs"] = {};
             res.set_content(j.dump(), "application/json");
-            std::println("No such block in registry");
-            return;
-        }
-
-        // Block exists
-        gr::property_map map_;
-        auto block_mod = registry->create(block, map_);
-        block_mod->settings().init();
-
-        for (const auto& [key, value] : block_mod->settings().defaultParameters()) {
-            std::string val_s = std::visit(gr::meta::overloaded{
-                          [&](double val) { return std::to_string(val); },
-                          [&](float val) { return std::to_string(val); },
-                          [&](auto&& val) {
-                              using T = std::remove_cvref_t<decltype(val)>;
-                              if constexpr (std::integral<T>) {
-                                  std::string x = std::format("{}", val);
-                                  return std::to_string(val);
-                              } else if constexpr (std::same_as<T, std::string> || std::same_as<T, std::string_view>) {
-                                  return std::string(val);
-                              }
-                              return ""s;
-                          }},
-                        value);
-            parameters.push_back(std::tuple<std::string,std::string>(key, val_s));
-        }
-        for (const auto& item : block_mod->inputMetaInfos()) {
-            inputs.push_back(std::tuple<std::string,std::string>(item.signal_name.value, item.data_type.value));
-        }
-        for (const auto& item : block_mod->outputMetaInfos()) {
-            outputs.push_back(std::tuple<std::string,std::string>(item.signal_name.value, item.data_type.value));
-        }
-
-        j["parameters"] = parameters;
-        j["inputs"] = inputs;
-        j["outputs"] = outputs;
-
-        res.set_content(j.dump(), "application/json");
-    });
+        });
+        */
 
     std::cout << "Server started at localhost:8080" << std::endl;
     svr.listen("0.0.0.0", 8080);

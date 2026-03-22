@@ -36,6 +36,9 @@ target_link_libraries(
   PUBLIC
          gnuradio-core
          gnuradio-blocklib-core
+         gr-basic
+         gr-testing
          GrBasicBlocksShared
+         GrTestingBlocksShared
          )
 

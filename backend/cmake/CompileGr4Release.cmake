@@ -46,7 +46,12 @@ gnuradio-algorithm
 gr-basic
 GrBasicBlocksObject
 GrBasicBlocksShared
-GrBasicBlocksStatic)
+GrBasicBlocksStatic
+gr-testing
+GrTestingBlocksObject
+GrTestingBlocksShared
+GrTestingBlocksStatic
+)
 
   get_property(
     ts
