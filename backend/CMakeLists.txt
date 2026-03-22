@@ -19,7 +19,7 @@ include(cmake/CompileGr4Release.cmake)
 FetchContent_Declare(
   gnuradio4
   GIT_REPOSITORY https://github.com/fair-acc/gnuradio4.git
-  GIT_TAG f5d237adf60887422f117e83d3e635bf90bd155c
+  GIT_TAG 3d2c97ee80db23d74690de84640e4015e33ce6a1
   SYSTEM EXCLUDE_FROM_ALL)
 
 FetchContent_MakeAvailable(gnuradio4)
@@ -29,7 +29,7 @@ od_set_release_flags_on_gnuradio_targets("${gnuradio4_SOURCE_DIR}")
 add_executable(${target_name})
 
 target_sources(${target_name} PRIVATE main.cpp)
-target_compile_options(${target_name} PRIVATE -Wno-error=old-style-cast -Wno-error=useless-cast -Wno-error=unused-parameter)
+target_compile_options(${target_name} PRIVATE -Wno-error=old-style-cast -Wno-error=unused-parameter)
 
 target_link_libraries(
   ${target_name}
