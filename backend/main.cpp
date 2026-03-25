@@ -35,6 +35,20 @@ void signal_handler(int signum) {
 int main() {
     httplib::Server svr;
 
+    svr.set_exception_handler([](const auto& req, auto& res, std::exception_ptr ep) {
+        try {
+            std::rethrow_exception(ep);
+        } catch (const std::exception& e) {
+            std::cerr << "Server Exception: " << e.what() << std::endl;
+            res.status = 500;
+            res.set_content("Internal Server Error", "text/plain");
+        } catch (...) {
+            std::cerr << "Unknown Server Exception" << std::endl;
+            res.status = 500;
+            res.set_content("Internal Server Error", "text/plain");
+        }
+    });
+
     signal(SIGINT, signal_handler); // Catch SIGINT
     auto* registry = grGlobalBlockRegistry();
     gr::blocklib::initGrBasicBlocks(*registry);
