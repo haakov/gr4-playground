@@ -98,17 +98,18 @@ int main() {
                 bool visible = false;
 
                 if (meta.contains(full_key)) {
-                    visible = meta.at(full_key).get_if<bool>();
+                    auto vis = meta.at(full_key).get_if<bool>();
+                    visible  = *vis;
                 }
                 block["parameters"].push_back({{"key", key_}, {"visible", visible}, {"value", val_s}, {"default", val_s}, {"hide", !visible}, {"id", key_}, {"label", key_}});
 
                 if (key_ == "name") {
                     if (val_s.starts_with("gr::basic")) {
-                        block["category"] = "basic";
+                        block["category"] = "gr::basic";
                     } else if (val_s.starts_with("gr::testing")) {
-                        block["category"] = "testing";
+                        block["category"] = "gr::testing";
                     } else if (val_s.starts_with("gr::blocks")) {
-                        block["category"] = "blocks";
+                        block["category"] = "gr::blocks";
                     } else {
                         block["category"] = "other";
                     }
