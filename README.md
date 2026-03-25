@@ -6,7 +6,7 @@ How to run:
 
 ```
 docker run -it -p 8080:8080 ghcr.io/haakov/gr4-playground:latest /
-
+```
 
 ## Building for Linux
 
