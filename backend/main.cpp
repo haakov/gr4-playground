@@ -20,6 +20,7 @@
 #include "json.hpp"
 
 using json = nlohmann::json;
+using namespace std::chrono_literals;
 
 void enableCORS(httplib::Response& res) {
     res.set_header("Access-Control-Allow-Origin", "*");
@@ -130,19 +131,49 @@ int main() {
 
         res.set_content(j.dump(), "application/json");
     });
-    /*
-        svr.Options("/run", [](const httplib::Request& req, httplib::Response& res) {
-            enableCORS(res);
-            res.status = 204;
+
+    svr.Options("/run", [](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+        res.status = 204;
+    });
+    svr.Post("/run", [](const httplib::Request& req, httplib::Response& res) {
+        enableCORS(res);
+        // json                       data    = json::parse(req.body);
+        // std::string                block   = data["flowgraph"];
+        constexpr std::string_view testGrc = R"(
+blocks:
+  - id: gr::testing::NullSink<float32>
+    parameters:
+      name: NullSink<float32>
+  - id: gr::testing::NullSource<float32>
+    parameters:
+      name: NullSource<float32>
+
+connections:
+  - [NullSource<float32>, 0, NullSink<float32>, 0]
+)";
+        auto                       graph   = gr::loadGrc(gr::globalPluginLoader(), testGrc);
+        gr::scheduler::Simple      sched;
+        if (auto ret = sched.exchange(std::move(graph)); !ret) {
+            throw std::runtime_error(std::format("failed to initialize scheduler: {}", ret.error()));
+        }
+        std::chrono::milliseconds timeout = 3s;
+        std::atomic<bool>         schedulerDone{false};
+        std::thread               timeoutThread([&sched, &schedulerDone, timeout] {
+            const auto deadline = std::chrono::steady_clock::now() + timeout;
+            while (!schedulerDone.load() && std::chrono::steady_clock::now() < deadline) {
+                std::this_thread::sleep_for(10ms);
+            }
+            if (!schedulerDone.load()) {
+                sched.requestStop();
+                std::println("requesting stop");
+            }
         });
-        svr.Post("/run", [&registry](const httplib::Request& req, httplib::Response& res) {
-            enableCORS(res);
-
-
-
-            res.set_content(j.dump(), "application/json");
-        });
-        */
+        auto                      result = sched.runAndWait();
+        schedulerDone                    = true;
+        timeoutThread.join();
+        res.set_content("\"result\": true", "application/json");
+    });
 
     std::cout << "Server started at localhost:8080" << std::endl;
     svr.listen("0.0.0.0", 8080);
